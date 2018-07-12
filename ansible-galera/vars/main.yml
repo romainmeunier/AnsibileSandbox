@@ -1,0 +1,23 @@
+---
+galera_packages:
+  Debian:
+    manager: apt
+    major_versions:
+      common:
+        repository_keys:
+          - key_server: keyserver.ubuntu.com
+            trusted_key: "0xF1656F24C74CD1D8"
+          - key_server: keyserver.ubuntu.com
+            trusted_key: "0x9334A25F8507EFA5"
+        repositories:
+          mariadb-main: "deb http://ftp.igh.cnrs.fr/pub/mariadb/repo/{{ galera_database_engine_version }}/{{ ansible_distribution|lower }} {{ ansible_distribution_release|lower }} main"
+          percona-main: "deb http://repo.percona.com/apt/ {{ ansible_distribution_release }} main"
+        dependencies:
+          - software-properties-common
+          - python-mysqldb
+          - apt-transport-https
+        packages:
+          - mariadb-client
+          - mariadb-server
+          - galera-3
+          - percona-xtrabackup-24

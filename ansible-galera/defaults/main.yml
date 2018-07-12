@@ -1,0 +1,30 @@
+---
+galera_cluster:
+  config:
+    file: cluster.cnf
+    path: /etc/mysql/conf.d
+    owner: mysql
+  flare: galera_mysql_root_password
+
+galera_bootstrap: false
+galera_database_engine_version: 10.2
+galera_database_engine: mariadb
+galera_maintenance_password: "{{ vault_galera_maintenance_password | mandatory() }}"
+galera_node_ip: 127.0.0.1
+galera_root_password: "{{ vault_galera_root_password | mandatory() }}"
+
+mariadb:
+  config:
+    file: my.cnf
+    path: /etc/mysql
+    owner: mysql
+
+mysql: []
+
+wsrep:
+  cluster_members: [127.0.0.1]
+  cluster_name: galera
+  provider_options: "base_port=4567; gcache.size=1G; gmcast.segment=0; socket.checksum=1"
+  sst_auth_pass: "{{ vault_sst_auth_pass | mandatory() }}"
+  sst_auth_user: "{{ vault_sst_auth_user | mandatory() }}"
+  sst_method: xtrabackup-v2

@@ -1,0 +1,197 @@
+---
+- name: "Configure galera cluster {{ galera_cluster.config.path }}/{{ galera_cluster.config.file }}"
+  template:
+    src: "{{ galera_cluster.config.file }}.j2"
+    dest: "{{ galera_cluster.config.path }}/{{ galera_cluster.config.file }}"
+    owner: "{{ galera_cluster.config.owner }}"
+    group: "{{ galera_cluster.config.owner }}"
+    mode: 0640
+  tags: galera_config
+
+- name: "Configure mariadb instance {{ mariadb.config.path }}/{{ mariadb.config.file }}"
+  template:
+    src: "{{ mariadb.config.file }}.j2"
+    dest: "{{ mariadb.config.path }}/{{ mariadb.config.file }}"
+    owner: "{{ mariadb.config.owner }}"
+    group: "{{ mariadb.config.owner }}"
+    mode: 0644
+  tags: galera_config
+
+- name: "Set owner of mariadb configuration directory"
+  file:
+    path: "{{ mariadb.config.path }}"
+    owner: "{{ mariadb.config.owner }}"
+    group: "{{ mariadb.config.owner }}"
+  tags: galera_config
+
+- name: "check root password"
+  stat:
+    path: /etc/mysql/galera_mysql_root_password
+  register: _galera_mysql_root_password
+  tags:
+    - galera_config
+    - galera_root_access
+
+- name: set mariadb root password for local login
+  mysql_user:
+    name: root
+    password: "{{ galera_root_password }}"
+    host: localhost
+    state: present
+  when: not _galera_mysql_root_password.stat.exists
+  tags:
+    - galera_config
+    - galera_root_access
+
+- name: configure mariadb root defaults-file
+  template:
+    src: root/my.cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0640
+    force: yes
+  when: not _galera_mysql_root_password.stat.exists
+  tags:
+    - galera_config
+    - galera_root_access
+
+- name: set mariadb debian-sys-maint password for service control
+  mysql_user:
+    name: debian-sys-maint
+    password: "{{ galera_maintenance_password }}"
+    host: localhost
+    state: present
+  when: not _galera_mysql_root_password.stat.exists
+  tags:
+    - galera_config
+    - galera_root_access
+
+- name: configure defaults-file for debian-sys-maint service user
+  template:
+    src: debian.cnf.j2
+    dest: /etc/mysql/debian.cnf
+    owner: mysql
+    group: mysql
+    mode: 0640
+  when: not _galera_mysql_root_password.stat.exists
+  tags:
+    - galera_config
+    - galera_root_access
+
+- name: create root password file
+  file:
+    path: /etc/mysql/galera_mysql_root_password
+    state: touch
+  when: not _galera_mysql_root_password.stat.exists
+  tags:
+    - galera_config
+    - galera_root_access
+
+# Secure mysql installation - mysql_secure_installation script analogue
+- name: check secure
+  stat:
+    path: /etc/mysql/galera_mysql_secure
+  register: _galera_mysql_secure
+  tags:
+    - galera_config
+    - galera_secure_access
+
+- name: remove test database
+  mysql_db:
+    name: test
+    state: absent
+  when: not _galera_mysql_secure.stat.exists
+  tags:
+    - galera_config
+    - galera_secure_access
+
+- name: deny remote root access
+  mysql_user:
+    name: root
+    host: "{{ item }}"
+  with_items:
+    - "localhost"
+    - "127.0.0.1"
+    - "::1"
+  when: not _galera_mysql_secure.stat.exists
+  tags:
+    - galera_config
+    - galera_secure_access
+
+- name: deny anonymous access
+  mysql_user:
+    name: ""
+    state: absent
+  when: not _galera_mysql_secure.stat.exists
+  tags:
+    - galera_config
+    - galera_secure_access
+
+- name: create secure file
+  file:
+    path: /etc/mysql/galera_mysql_secure
+    state: touch
+  when: not _galera_mysql_secure.stat.exists
+  tags:
+    - galera_config
+    - galera_secure_access
+
+- name: create wsrep user
+  mysql_user:
+    name: "{{ item.sst_auth_user }}"
+    password: "{{ item.sst_auth_pass }}"
+    host: "localhost"
+    priv: "*.*:RELOAD,PROCESS,LOCK TABLES,REPLICATION CLIENT"
+    state: present
+  with_items:
+    - "{{ wsrep }}"
+  tags:
+    - galera_config
+    - galera_replication_access
+
+# To bootstrap a new cluster you need to start the first
+# mysqld server with the option --wsrep-new-cluster on the command line
+
+- name: "Check bootstrapped"
+  stat:
+    path: /etc/mysql/galera_node_bootstrapped
+  register: _galera_node_bootstrapped
+  tags:
+    - galera_config
+    - galera_bootstrap
+
+- name: "Stop servers if not bootstrapped"
+  service:
+    name: mysql
+    state: stopped
+  when: not _galera_node_bootstrapped.stat.exists
+  failed_when: False
+  tags:
+    - galera_config
+    - galera_bootstrap
+
+- name: "Bootstrap new cluster master"
+  command: galera_new_cluster
+  when: galera_bootstrap and not _galera_node_bootstrapped.stat.exists
+  tags:
+    - galera_config
+    - galera_bootstrap
+
+- name: "Restart new added nodes"
+  service:
+    name: mysql
+    state: restarted
+  when: not galera_bootstrap and not _galera_node_bootstrapped.stat.exists
+  tags:
+    - galera_config
+    - galera_bootstrap
+
+- name: "Create bootstrap file"
+  file:
+    path: /etc/mysql/galera_node_bootstrapped
+    state: touch
+  when: not _galera_node_bootstrapped.stat.exists
+  tags:
+    - galera_config
+    - galera_bootstrap

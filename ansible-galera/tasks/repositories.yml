@@ -1,0 +1,21 @@
+---
+- name: Add GPG key
+  apt_key:
+    keyserver: "{{ item.key_server }}"
+    id: "{{ item.trusted_key }}"
+    state: present
+  with_items: "{{ repository_keys }}"
+  when: galera_packages_manager == "apt" and repository_keys|length() > 0
+
+- name: Configure apt repository
+  apt_repository:
+    repo: "{{ item.value }}"
+    filename: "{{ item.key }}"
+    state: present
+  with_dict: "{{ repositories }}"
+  when: galera_packages_manager == "apt"
+  notify: galera_apt_get_update
+
+- name: Run udpate
+  meta: flush_handlers
+...

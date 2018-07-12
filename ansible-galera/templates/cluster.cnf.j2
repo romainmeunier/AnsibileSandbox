@@ -1,0 +1,21 @@
+# {{ ansible_managed }}
+
+[mysqld]
+wsrep_on                = ON
+wsrep_provider          = /usr/lib/galera/libgalera_smm.so
+{% if wsrep.provider_options is defined %}
+wsrep_provider_options  = {{ wsrep.provider_options }}
+{% endif -%}
+wsrep_cluster_name      = {{ wsrep.cluster_name }}
+wsrep_sst_method        = {{ wsrep.sst_method }}
+wsrep_sst_auth          = {{ wsrep.sst_auth_user }}:{{ wsrep.sst_auth_pass }}
+wsrep_node_name         = {{ ansible_fqdn }}
+wsrep_debug             = 1
+
+wsrep_cluster_address   = gcomm://{{ ",".join(wsrep.cluster_members) }}
+
+{% for ipaddr in ansible_all_ipv4_addresses %}
+  {%- if ipaddr in wsrep.cluster_members %}
+wsrep_node_address      = {{ ipaddr }}
+  {%- endif %}
+{% endfor %}

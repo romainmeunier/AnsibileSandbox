@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  author: LS-SRE
+  description: An ansible role for Galera cluster.
+  company: vente-privee
+  license:
+  min_ansible_version: 2.0
+  platforms:
+  - name: EL
+    versions:
+    - 6
+    - 7
+  - name: Debian
+    versions:
+    - jessie
+    - stretch
+  - name: Ubuntu
+    versions:
+    - trusty
+    - xenial
+  galaxy_tags:
+    - galera
+    - mysql
+    - mariadb
+dependencies: []

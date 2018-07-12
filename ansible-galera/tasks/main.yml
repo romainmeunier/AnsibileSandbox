@@ -1,0 +1,63 @@
+---
+- name: "Set OS variables"
+  set_fact:
+    galera_packages_os_specific: "{{ galera_packages[ansible_distribution] }}"
+    galera_packages_manager: "{{ galera_packages[ansible_distribution].manager }}"
+    galera_os_version: "{{ ansible_distribution_major_version }}"
+  tags:
+    - galera_install
+    - galera_packages
+
+- name: "Configure repositories"
+  include_tasks: repositories.yml
+  vars:
+    repository_keys: "{{ galera_packages_os_specific.major_versions[major_version].repository_keys|default() }}"
+    repositories: "{{ galera_packages_os_specific.major_versions[major_version].repositories }}"
+  with_items:
+    - common
+    - "{{ galera_os_version }}"
+  loop_control:
+    loop_var: major_version
+  when: |
+    galera_packages_os_specific.major_versions[major_version] is defined and
+    galera_packages_os_specific.major_versions[major_version].repositories is defined
+  tags:
+    - galera_install
+    - galera_packages
+
+- name: "Install dependencies"
+  include_tasks: packages.yml
+  vars:
+    os_version: "{{ major_version }}"
+    packages: "{{ galera_packages_os_specific.major_versions[major_version].dependencies }}"
+  with_items:
+    - common
+    - "{{ galera_os_version }}"
+  loop_control:
+    loop_var: major_version
+  when: |
+    galera_packages_os_specific.major_versions[major_version] is defined and
+    galera_packages_os_specific.major_versions[major_version].dependencies is defined
+  tags:
+    - galera_install
+    - galera_packages
+
+- name: "Install packages"
+  include_tasks: packages.yml
+  vars:
+    os_version: "{{ major_version }}"
+    packages: "{{ galera_packages_os_specific.major_versions[major_version].packages }}"
+  with_items:
+    - common
+    - "{{ galera_os_version }}"
+  loop_control:
+    loop_var: major_version
+  when: |
+    galera_packages_os_specific.major_versions[major_version] is defined and
+    galera_packages_os_specific.major_versions[major_version].packages is defined
+  tags:
+    - galera_install
+    - galera_packages
+
+- name: "install galera for {{ ansible_os_family }}"
+  include_tasks: "{{ ansible_os_family | lower() }}.yml"

@@ -1,0 +1,68 @@
+# {{ ansible_managed }}
+
+[client]
+port            = {{ mysql.port | default(3306) }}
+socket          = /var/run/mysqld/mysqld.sock
+
+[mysqld_safe]
+log-error       = /var/log/mysql/mysqld.log
+socket          = /var/run/mysqld/mysqld.sock
+nice            = 0
+
+[mysqld]
+bind_address            = {{ mysql.bind_address | default('127.0.0.1') }}
+user                    = mysql
+pid-file                = /var/run/mysqld/mysqld.pid
+socket                  = /var/run/mysqld/mysqld.sock
+port                    = {{ mysql.port | default(3306) }}
+basedir                 = /usr
+datadir                 = {{ mysql.datadir | default('/var/lib/mysql') }}
+tmpdir                  = /tmp
+
+skip-name-resolve
+ignore-db-dir           = lost+found
+
+lc-messages-dir         = /usr/share/mysql
+skip-external-locking
+key_buffer_size         = {{ mysql.key_buffer_size | default('16M') }}
+max_connections         = {{ mysql.max_connections | default('100') }}
+max_allowed_packet      = {{ mysql.max_allowed_packet | default('16M') }}
+thread_stack            = {{ mysql.thread_stack | default('192K') }}
+thread_cache_size       = {{ mysql.thread_cache_size | default('8') }}
+
+myisam-recover-options         = {{ mysql.myisam_recover_options | default('BACKUP') }}
+query_cache_limit       = {{ mysql.query_cache_limit | default('1M') }}
+query_cache_size        = {{ mysql.query_cache_size | default('0') }}
+
+log_error                     = {{ mysql.log_error | default('/var/log/mysql/mysqldb.log') }}
+log_warnings                  = {{ mysql.log_warnings | default('2') }}
+slow_query_log                = {{ mysql.slow_query_log | default('1') }}
+long_query_time               = {{ mysql.long_query_time | default('2') }}
+log-queries-not-using-indexes = {{ mysql.log_queries_not_using_indexes | default('False') }}
+
+log_bin                 = {{ mysql.log_bin | default('/var/log/mysql/mysql-bin.log') }}
+sync_binlog             = {{ mysql.sync_binlog | default('1') }}
+binlog_format           = {{ mysql.binlog_format | default('ROW') }}
+expire_logs_days        = {{ mysql.expire_logs_days | default('2') }}
+max_binlog_size         = {{ mysql.max_binlog_size | default('100M') }}
+log_slave_updates
+
+default_storage_engine          = {{ mysql.default_storage_engine | default('InnoDB') }}
+innodb_autoinc_lock_mode        = {{ mysql.innodb_autoinc_lock_mode | default('2') }}
+innodb_file_per_table           = {{ mysql.innodb_file_per_table | default('1') }}
+innodb_thread_concurrency       = {{ mysql.innodb_thread_concurrency | default('0') }}
+innodb_buffer_pool_size         = {{ mysql.innodb_buffer_pool_size | default('122M') }}
+innodb_log_buffer_size          = {{ mysql.innodb_log_buffer_size | default('64M') }}
+innodb_log_file_size            = {{ mysql.innodb_log_file_size | default('5M') }}
+innodb_doublewrite              = {{ mysql.innodb_doublewrite | default('1') }}
+innodb_flush_log_at_trx_commit  = {{ mysql.innodb_flush_log_at_trx_commit | default('0') }}
+
+[mysqldump]
+quick
+quote-names
+max_allowed_packet      = {{ mysql.max_allowed_packet | default('16M') }}
+
+[isamchk]
+key_buffer_size         = {{ mysql.key_buffer_size | default('16M') }}
+
+!includedir /etc/mysql/conf.d/

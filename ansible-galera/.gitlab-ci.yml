@@ -1,0 +1,33 @@
+---
+# https://docs.gitlab.com/ee/ci/docker/using_docker_build.html
+
+stages:
+  - lint
+  # - test-debian
+
+# syntax
+ansible-lint:
+  stage: lint
+  image: vpgrp/linter:ansible
+  script:
+    - ansible-lint .
+
+yaml-lint:
+  stage: lint
+  image: vpgrp/linter:yaml
+  script:
+    - yaml-lint -i .
+
+markdown-lint:
+  stage: lint
+  image: vpgrp/linter:markdown
+  script:
+    - mdl .
+
+# test
+# debian-9:
+#   stage: test-debian
+#   image: vpgrp/kitchen
+#   script:
+#     - kitchen test --destroy=always --color
+...

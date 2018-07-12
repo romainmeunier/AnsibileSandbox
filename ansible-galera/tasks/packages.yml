@@ -1,0 +1,6 @@
+---
+- name: "Install packages for {{ ansible_distribution }} {{ os_version }}"
+  package: name="{{ item }}" state=present
+  with_items:
+    - "{{ packages }}"
+...

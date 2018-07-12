@@ -1,0 +1,5 @@
+- hosts: galera_all
+  become: True
+  roles:
+    - galera
+
